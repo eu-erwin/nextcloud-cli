@@ -1,7 +1,7 @@
 package cloud
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -34,7 +34,6 @@ func (t *testSuite) BeforeAll() {
 	if err != nil {
 		panic(err)
 	}
-
 }
 
 func (t *testSuite) After() {
@@ -57,7 +56,7 @@ func (t *testSuite) TestDownloadUpload() {
 	err := client.Mkdir("Test")
 	t.Nil(err)
 
-	src, err := ioutil.ReadFile(filepath.Join(testDir, "test.txt"))
+	src, err := os.ReadFile(filepath.Join(testDir, "test.txt"))
 	err = client.Upload(src, "Test/test.txt")
 	t.Nil(err)
 

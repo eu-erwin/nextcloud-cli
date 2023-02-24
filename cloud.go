@@ -4,14 +4,15 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 )
 
-// A client represents a client connection to a {own|next}cloud
+// Client represents a client connection to a {own|next}cloud
 type Client struct {
 	Url      *url.URL
 	Username string
@@ -51,12 +52,12 @@ type ShareResult struct {
 // Dial connects to an {own|next}Cloud instance at the specified
 // address using the given credentials.
 func Dial(host, username, password string) (*Client, error) {
-	url, err := url.Parse(host)
+	parsedUrl, err := url.Parse(host)
 	if err != nil {
 		return nil, err
 	}
 	return &Client{
-		Url:      url,
+		Url:      parsedUrl,
 		Username: username,
 		Password: password,
 	}, nil
@@ -90,7 +91,7 @@ func (c *Client) UploadDir(src string, dest string) ([]string, error) {
 		return nil, err
 	}
 	for _, file := range files {
-		data, err := ioutil.ReadFile(file)
+		data, err := os.ReadFile(file)
 		if err != nil {
 			return nil, err
 		}
@@ -178,20 +179,20 @@ func (c *Client) sendWebDavRequest(request string, path string, data []byte) ([]
 		return nil, err
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 
 	if len(body) > 0 {
 		if body[0] == '<' {
-			error := Error{}
-			err = xml.Unmarshal(body, &error)
-			if err != nil {
-				return body, err
+			reqErr := &Error{}
+			decodeErr := xml.Unmarshal(body, reqErr)
+			if decodeErr != nil {
+				return body, decodeErr
 			}
-			if error.Exception != "" {
-				return nil, err
+			if reqErr.Exception != "" {
+				return nil, reqErr
 			}
 		}
 
@@ -226,7 +227,7 @@ func (c *Client) sendAppsRequest(request string, path string, data string) (*Sha
 		return nil, err
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -269,7 +270,7 @@ func (c *Client) sendOCSRequest(request string, path string, data string) (*Shar
 		return nil, err
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
