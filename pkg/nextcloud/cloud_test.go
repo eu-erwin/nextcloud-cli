@@ -37,10 +37,7 @@ func (t *testSuite) BeforeAll() {
 }
 
 func (t *testSuite) After() {
-	err := client.Delete("Test")
-	if err != nil {
-		panic("can't delete Test")
-	}
+	_ = client.Delete("Test")
 }
 
 func (t *testSuite) TestMkDir() {

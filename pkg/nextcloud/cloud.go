@@ -11,13 +11,15 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/eu-erwin/nextcloud-cli/pkg/cloud"
 )
 
 func NewStorage(
 	cloudUrl,
 	username,
 	password string,
-) (*Client, error) {
+) (cloud.Storage, error) {
 	if "" == cloudUrl {
 		return nil, errors.New("missing url")
 	}
@@ -56,21 +58,6 @@ type Error struct {
 
 func (e *Error) Error() string {
 	return fmt.Sprintf("Exception: %s, Message: %s", e.Exception, e.Message)
-}
-
-type ShareElement struct {
-	Id  uint   `xml:"id"`
-	Url string `xml:"url"`
-}
-
-type ShareResult struct {
-	XMLName    xml.Name       `xml:"ocs"`
-	Status     string         `xml:"meta>status"`
-	StatusCode uint           `xml:"meta>statuscode"`
-	Message    string         `xml:"meta>message"`
-	Id         uint           `xml:"data>id"`
-	Url        string         `xml:"data>url"`
-	Elements   []ShareElement `xml:"data>element"`
 }
 
 // Dial connects to an {own|next}Cloud instance at the specified
@@ -138,31 +125,31 @@ func (c *Client) Exists(path string) bool {
 	return err == nil
 }
 
-func (c *Client) CreateGroupFolder(mountPoint string) (*ShareResult, error) {
+func (c *Client) CreateGroupFolder(mountPoint string) (*cloud.ShareResult, error) {
 	return c.sendAppsRequest("POST", "groupfolders/folders", fmt.Sprintf("mountpoint=%s", mountPoint))
 }
 
-func (c *Client) AddGroupToGroupFolder(group string, folderId uint) (*ShareResult, error) {
+func (c *Client) AddGroupToGroupFolder(group string, folderId uint) (*cloud.ShareResult, error) {
 	return c.sendAppsRequest("POST", fmt.Sprintf("groupfolders/folders/%d/groups", folderId), fmt.Sprintf("group=%s", group))
 }
 
-func (c *Client) SetGroupPermissionsForGroupFolder(permissions int, group string, folderId uint) (*ShareResult, error) {
+func (c *Client) SetGroupPermissionsForGroupFolder(permissions int, group string, folderId uint) (*cloud.ShareResult, error) {
 	return c.sendAppsRequest("POST", fmt.Sprintf("apps/groupfolders/folders/%d/groups/%s", folderId, group), fmt.Sprintf("permissions=%d", permissions))
 }
 
-func (c *Client) CreateShare(path string, shareType int, publicUpload string, permissions int) (*ShareResult, error) {
+func (c *Client) CreateShare(path string, shareType int, publicUpload string, permissions int) (*cloud.ShareResult, error) {
 	return c.sendOCSRequest("POST", "shares", fmt.Sprintf("path=%s&shareType=%d&publicUpload=%s&permissions=%d", path, shareType, publicUpload, permissions))
 }
 
-func (c *Client) GetShare(path string) (*ShareResult, error) {
+func (c *Client) GetShare(path string) (*cloud.ShareResult, error) {
 	return c.sendOCSRequest("GET", fmt.Sprintf("shares?path=%s", path), "")
 }
 
-func (c *Client) DeleteShare(id uint) (*ShareResult, error) {
+func (c *Client) DeleteShare(id uint) (*cloud.ShareResult, error) {
 	return c.sendOCSRequest("DELETE", fmt.Sprintf("shares/%d", id), "")
 }
 
-func (c *Client) CreateFileDropShare(path string) (*ShareResult, error) {
+func (c *Client) CreateFileDropShare(path string) (*cloud.ShareResult, error) {
 	result, err := c.CreateShare(path, 3, "true", 4)
 	if err != nil {
 		return nil, err
@@ -171,7 +158,7 @@ func (c *Client) CreateFileDropShare(path string) (*ShareResult, error) {
 	return c.sendOCSRequest("PUT", fmt.Sprintf("shares/%d", id), "permissions=4")
 }
 
-func (c *Client) CreateReadOnlyShare(path string) (*ShareResult, error) {
+func (c *Client) CreateReadOnlyShare(path string) (*cloud.ShareResult, error) {
 	result, err := c.CreateShare(path, 3, "true", 4)
 	if err != nil {
 		return nil, err
@@ -225,7 +212,7 @@ func (c *Client) sendWebDavRequest(request string, path string, data []byte) ([]
 	return body, nil
 }
 
-func (c *Client) sendAppsRequest(request string, path string, data string) (*ShareResult, error) {
+func (c *Client) sendAppsRequest(request string, path string, data string) (*cloud.ShareResult, error) {
 	// Create the https request
 
 	appsPath := filepath.Join("apps", path)
@@ -256,7 +243,7 @@ func (c *Client) sendAppsRequest(request string, path string, data string) (*Sha
 		return nil, err
 	}
 
-	result := ShareResult{}
+	result := cloud.ShareResult{}
 	err = xml.Unmarshal(body, &result)
 	if err != nil {
 		return nil, err
@@ -268,7 +255,7 @@ func (c *Client) sendAppsRequest(request string, path string, data string) (*Sha
 	return &result, nil
 }
 
-func (c *Client) sendOCSRequest(request string, path string, data string) (*ShareResult, error) {
+func (c *Client) sendOCSRequest(request string, path string, data string) (*cloud.ShareResult, error) {
 	// Create the https request
 
 	appsPath := filepath.Join("ocs/v2.php/apps/files_sharing/api/v1", path)
@@ -299,9 +286,9 @@ func (c *Client) sendOCSRequest(request string, path string, data string) (*Shar
 		return nil, err
 	}
 
-	result := ShareResult{}
+	result := &cloud.ShareResult{}
 
-	err = xml.Unmarshal(body, &result)
+	err = xml.Unmarshal(body, result)
 	if err != nil {
 		return nil, err
 	}
@@ -309,5 +296,5 @@ func (c *Client) sendOCSRequest(request string, path string, data string) (*Shar
 		return nil, fmt.Errorf("share API returned an unsuccessful status code %d", result.StatusCode)
 	}
 
-	return &result, nil
+	return result, nil
 }
