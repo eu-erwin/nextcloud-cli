@@ -20,10 +20,10 @@ func NewStorage(
 	username,
 	password string,
 ) (cloud.Storage, error) {
-	if "" == cloudUrl {
+	if cloudUrl == "" {
 		return nil, errors.New("missing url")
 	}
-	if "" == username || "" == password {
+	if username == "" || password == "" {
 		return nil, errors.New("missing credentials")
 	}
 

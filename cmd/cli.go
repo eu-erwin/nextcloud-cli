@@ -50,7 +50,7 @@ Ex.: nextcloud-cli upload --username=john --password=supersecret --url=https://c
 
 func Run() {
 	args := flag.Args()
-	if 0 == len(args) {
+	if len(args) == 0 {
 		log.Println(`missing command`)
 		printHelp()
 		return
@@ -70,21 +70,21 @@ func upload(sources ...string) {
 		fmt.Printf("Uploading %s\r\n", source)
 
 		content, err := os.ReadFile(strings.Join([]string{wd, source}, "/"))
-		if nil != err {
+		if err != nil {
 			log.Println("Can't upload", source, err.Error())
 			continue
 		}
 
 		target := source
-		if "" != *targetPath {
-			if err = client.Mkdir(*targetPath); nil == err {
+		if *targetPath != "" {
+			if err = client.Mkdir(*targetPath); err != nil {
 				log.Println("New directory created", source)
 			}
 			target = strings.Join([]string{*targetPath, source}, "/")
 		}
 
 		err = client.Upload(content, target)
-		if nil != err {
+		if err != nil {
 			log.Println("Upload failed", source, err.Error())
 			continue
 		}
