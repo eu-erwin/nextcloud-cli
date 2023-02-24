@@ -1,4 +1,4 @@
-package cloud
+package nextcloud
 
 import (
 	"os"
@@ -37,7 +37,10 @@ func (t *testSuite) BeforeAll() {
 }
 
 func (t *testSuite) After() {
-	client.Delete("Test")
+	err := client.Delete("Test")
+	if err != nil {
+		panic("can't delete Test")
+	}
 }
 
 func (t *testSuite) TestMkDir() {
@@ -123,8 +126,10 @@ func (t *testSuite) TestCreateFileDropShare() {
 		t.True(len(result.Url) > 0)
 	}
 
-	client.Delete("ShareTest")
-
+	err = client.Delete("ShareTest")
+	if err != nil {
+		panic("can't delete ShareTest on TestCreateFileDropShare")
+	}
 }
 
 func (t *testSuite) TestGetShare() {
@@ -138,7 +143,10 @@ func (t *testSuite) TestGetShare() {
 	t.Nil(err)
 	t.True(len(result.Elements) > 0)
 
-	client.Delete("ShareTest")
+	err = client.Delete("ShareTest")
+	if err != nil {
+		panic("can't delete ShareTest on TestGetShare")
+	}
 }
 
 func (t *testSuite) TestDeleteShare() {
@@ -159,7 +167,10 @@ func (t *testSuite) TestDeleteShare() {
 	t.Nil(err)
 	t.True(len(result.Elements) == 0)
 
-	client.Delete("ShareTest")
+	err = client.Delete("ShareTest")
+	if err != nil {
+		panic("can't delete ShareTest on TestDeleteShare")
+	}
 }
 
 func (t *testSuite) TestCreateReadOnlyShare() {
@@ -180,5 +191,8 @@ func (t *testSuite) TestCreateReadOnlyShare() {
 	t.Nil(err)
 	t.True(len(result.Elements) == 0)
 
-	client.Delete("ShareTest")
+	err = client.Delete("ShareTest")
+	if err != nil {
+		panic("can't delete ShareTest on TestCreateReadOnlyShare")
+	}
 }

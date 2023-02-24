@@ -1,8 +1,9 @@
-package cloud
+package nextcloud
 
 import (
 	"bytes"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,6 +12,29 @@ import (
 	"path/filepath"
 	"strings"
 )
+
+func NewStorage(
+	cloudUrl,
+	username,
+	password string,
+) (*Client, error) {
+	if "" == cloudUrl {
+		return nil, errors.New("missing url")
+	}
+	if "" == username || "" == password {
+		return nil, errors.New("missing credentials")
+	}
+
+	parsedUrl, err := url.Parse(cloudUrl)
+	if nil != err {
+		return nil, errors.New("invalid url")
+	}
+	return &Client{
+		Url:      parsedUrl,
+		Username: username,
+		Password: password,
+	}, nil
+}
 
 // Client represents a client connection to a {own|next}cloud
 type Client struct {
@@ -238,7 +262,7 @@ func (c *Client) sendAppsRequest(request string, path string, data string) (*Sha
 		return nil, err
 	}
 	if result.StatusCode != 100 {
-		return nil, fmt.Errorf("Share API returned an unsuccessful status code %d", result.StatusCode)
+		return nil, fmt.Errorf("share API returned an unsuccessful status code %d", result.StatusCode)
 	}
 
 	return &result, nil
@@ -282,7 +306,7 @@ func (c *Client) sendOCSRequest(request string, path string, data string) (*Shar
 		return nil, err
 	}
 	if result.StatusCode != 200 {
-		return nil, fmt.Errorf("Share API returned an unsuccessful status code %d", result.StatusCode)
+		return nil, fmt.Errorf("share API returned an unsuccessful status code %d", result.StatusCode)
 	}
 
 	return &result, nil
